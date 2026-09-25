@@ -77,14 +77,14 @@ and traces remain ignored build artifacts.
 ## Remaining Issues
 
 The native package is published in the experimental `da3-small-coreml-v0.1.0`
-GitHub release with a separate SHA-256 asset. The 392 package still needs a
-release asset and MESS integration. Realtime performance and visual quality must
-be compared at both sizes under the same session workload.
+GitHub release. The 392 package is published in `da3-small-coreml-v0.2.0`; both
+have separate SHA-256 assets. MESS integration is complete. Realtime performance
+and visual quality must be compared at both sizes under the same session workload.
 
 ## Next Exact Action
 
-Integrate the validated 392 package into MESS as separate Core ML and MPSGraph
-options while preserving the existing 518 choices.
+Compare the 392 and 518 Core ML and MPSGraph choices in the MESS realtime session
+using the existing two-job scheduler and latest-pending-frame policy.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;

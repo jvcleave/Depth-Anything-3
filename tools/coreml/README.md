@@ -52,6 +52,11 @@ unzip DepthAnything3SmallCameraTokenImageF16.mlpackage.zip
 The archive SHA-256 is
 `ffb8150dc55f004bd0bd01f4d1788212c79f46d1af029a88e42e438efa243487`.
 
+The validated 392 x 392 comparison package is available from
+[`da3-small-coreml-v0.2.0`](https://github.com/jvcleave/Depth-Anything-3/releases/tag/da3-small-coreml-v0.2.0).
+Its archive SHA-256 is
+`f821a443c56257b60581eb610d52bd009e605308f7c3c8947fde27a42e25be36`.
+
 ## One-command build and validation
 
 Requirements:
