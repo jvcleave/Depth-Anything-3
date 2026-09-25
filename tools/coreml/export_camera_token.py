@@ -434,8 +434,37 @@ def apply_rope_model_fixups(api_model: LocalDepthAnything3) -> None:
         vit.position_getter = TraceablePositionGetter()
 
 
+def freeze_position_embedding(api_model: LocalDepthAnything3, input_size: int) -> None:
+    """Precompute DINOv2 positional interpolation for the fixed export shape."""
+    vit = api_model.model.backbone.pretrained
+    patch_size = int(vit.patch_size)
+    patch_count = (input_size // patch_size) ** 2
+    native_patch_count = vit.pos_embed.shape[1] - 1
+    if patch_count == native_patch_count:
+        return
+
+    placeholder = torch.empty(
+        1,
+        patch_count + 1,
+        vit.embed_dim,
+        dtype=vit.pos_embed.dtype,
+        device=vit.pos_embed.device,
+    )
+    with torch.inference_mode():
+        fixed_pos_embed = vit.interpolate_pos_encoding(
+            placeholder,
+            input_size,
+            input_size,
+        ).detach()
+    vit.pos_embed = nn.Parameter(fixed_pos_embed, requires_grad=False)
+
+
 def main() -> int:
     args = parse_args()
+    if args.input_size <= 0 or args.input_size % 14 != 0:
+        raise ValueError(
+            "--input-size must be a positive multiple of DA3's 14-pixel patch size"
+        )
     output_path = (REPO_ROOT / args.output).resolve()
     trace_path = (REPO_ROOT / args.trace_output).resolve()
     example_input = build_example_input(args.input_size)
@@ -469,6 +498,7 @@ def main() -> int:
             args.model_revision,
             args.model_sha256,
         )
+        freeze_position_embedding(camera_functional_model, args.input_size)
         if args.use_image_input:
             camera_functional_wrapper = DA3ImageInputWrapper(camera_functional_model)
         else:
@@ -492,6 +522,7 @@ def main() -> int:
     )
 
     if needs_monkey_patches(args.model_name):
+        freeze_position_embedding(api_model, args.input_size)
         apply_rope_model_fixups(api_model)
 
     if args.use_image_input:

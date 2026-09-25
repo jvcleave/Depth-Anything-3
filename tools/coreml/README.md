@@ -28,6 +28,13 @@ The exporter makes three fixed-shape rewrites:
 3. Replace the DualDPT `meshgrid` with repeated coordinate vectors while
    preserving the original `indexing="xy"` axis order.
 
+For non-native fixed sizes, it also evaluates DINOv2's bicubic positional-
+embedding interpolation once during export and stores the resulting table as a
+constant. Core ML Tools does not convert PyTorch's runtime
+`upsample_bicubic2d` operator, and retaining that operator is unnecessary for a
+fixed-shape package. The exporter compares the frozen table path with the
+untouched PyTorch model before conversion.
+
 The 518 x 518 input uses DINOv2's native 37 x 37 patch grid, so positional
 embedding interpolation is unnecessary.
 
@@ -61,6 +68,19 @@ From the repository root, run:
 tools/coreml/build_da3_small.sh
 ```
 
+The default remains the native 518 x 518 export. To build the lower-resolution
+392 x 392 MESS comparison artifact, run:
+
+```bash
+COREML_INPUT_SIZE=392 tools/coreml/build_da3_small.sh
+```
+
+That command writes
+`DepthAnything3SmallCameraToken392x392ImageF16.mlpackage`. Other fixed square
+sizes must be positive multiples of DA3's 14-pixel patch size. Non-native sizes
+use the upstream DINOv2 positional-embedding interpolation path. Override
+`COREML_MODEL_BASENAME` only when a consumer requires a different artifact name.
+
 The script creates an isolated `.venv-coreml`, installs the versions in
 `requirements-coreml.txt`, downloads `depth-anything/DA3-SMALL` at Hugging Face
 revision `e08cab65ca0ec38e7826075418411ab90cab4da3`, verifies the weights SHA-256
@@ -79,6 +99,9 @@ Artifacts are written to `build/coreml/` and remain outside Git:
 build/coreml/DepthAnything3SmallCameraTokenImageF16.mlpackage
 build/coreml/DepthAnything3SmallCameraTokenImageF16_traced.pt
 ```
+
+With `COREML_INPUT_SIZE=392`, the two filenames include
+`CameraToken392x392` instead.
 
 For repeat builds after the environment has been installed, set
 `COREML_SKIP_INSTALL=1`. `PYTHON_BIN`, `COREML_VENV_DIR`, and
@@ -119,6 +142,22 @@ target is iOS 18 / macOS 15 or later.
   MESS.
 - Generated package size: approximately 67 MB.
 
+The 392 x 392 comparison export passed the same checks:
+
+- Functional camera-token and frozen positional-table path versus untouched
+  PyTorch: exact on the fixed random input (`max_abs_diff = 0`).
+- TorchScript versus untouched PyTorch: `max_abs_diff = 3.58e-7`.
+- Float16 Core ML image package versus untouched PyTorch on the reference image:
+  cosine similarity `0.9999964`, mean absolute difference `0.002042`, and maximum
+  difference `0.011900`.
+- Core ML `CPU_AND_GPU` prediction median: `16.69 ms` over 20 warm runs.
+- MPSGraph conversion succeeded with float32 planar input shaped
+  `1 x 3 x 392 x 392` and float16 output shaped `1 x 1 x 392 x 392`.
+- A standalone eight-run graph probe measured a warm median of `15.22 ms` after
+  a `164.24 ms` first run. These timings exclude MESS preprocessing,
+  postprocessing, scheduling, and concurrent GPU work.
+- Generated Core ML package size: approximately 58 MB.
+
 Standalone timing has varied substantially with Core ML runtime state and
 machine load. Benchmark the package inside the MESS realtime session before
 changing scheduler policy.
@@ -137,6 +176,9 @@ KMP_DUPLICATE_LIB_OK=TRUE .venv-coreml/bin/python \
   --image assets/examples/SOH/000.png
 ```
 
+Pass `--input-size 392` when validating the 392 x 392 package directly. The
+one-command build supplies the selected size automatically.
+
 Validation fails if cosine similarity falls below `0.999` or mean absolute
 difference exceeds `0.01`. Both thresholds can be overridden on the command
 line.
@@ -145,8 +187,9 @@ line.
 
 This export is fixed to one view and emits depth only. DA3 Small's confidence
 head is still present in the source model but is outside the current MESS depth
-contract. MESS must resize its source image to 518 x 518 and scale the returned
-relative-depth image back to the source texture size.
+contract. MESS must resize its source image to the selected export's fixed size
+and scale the returned relative-depth image back to the source texture size. The
+optional 392 x 392 export has the same single-view depth-only contract as 518.
 
 The exporter is maintained on top of ByteDance Seed's `main`. The
 upstream multi-view reference-selection, batched inference, and streaming

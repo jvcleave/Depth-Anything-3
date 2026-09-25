@@ -7,7 +7,13 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 PYTHON_BIN="${PYTHON_BIN:-python3.11}"
 VENV_DIR="${COREML_VENV_DIR:-$REPO_ROOT/.venv-coreml}"
 OUTPUT_DIR="${COREML_OUTPUT_DIR:-$REPO_ROOT/build/coreml}"
-MODEL_BASENAME="DepthAnything3SmallCameraTokenImageF16"
+INPUT_SIZE="${COREML_INPUT_SIZE:-518}"
+if [[ "$INPUT_SIZE" = "518" ]]; then
+    DEFAULT_MODEL_BASENAME="DepthAnything3SmallCameraTokenImageF16"
+else
+    DEFAULT_MODEL_BASENAME="DepthAnything3SmallCameraToken${INPUT_SIZE}x${INPUT_SIZE}ImageF16"
+fi
+MODEL_BASENAME="${COREML_MODEL_BASENAME:-$DEFAULT_MODEL_BASENAME}"
 MODEL_PATH="$OUTPUT_DIR/$MODEL_BASENAME.mlpackage"
 TRACE_PATH="$OUTPUT_DIR/${MODEL_BASENAME}_traced.pt"
 
@@ -39,7 +45,7 @@ KMP_DUPLICATE_LIB_OK=TRUE "$VENV_DIR/bin/python" \
     --model-source depth-anything/DA3-SMALL \
     --model-revision e08cab65ca0ec38e7826075418411ab90cab4da3 \
     --model-sha256 364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf \
-    --input-size 518 \
+    --input-size "$INPUT_SIZE" \
     --use-image-input \
     --grayscale-output \
     --compute-precision float16 \
@@ -50,6 +56,7 @@ KMP_DUPLICATE_LIB_OK=TRUE "$VENV_DIR/bin/python" \
     "$SCRIPT_DIR/validate_export.py" \
     --model "$MODEL_PATH" \
     --image "$REPO_ROOT/assets/examples/SOH/000.png" \
+    --input-size "$INPUT_SIZE" \
     --model-source depth-anything/DA3-SMALL \
     --model-revision e08cab65ca0ec38e7826075418411ab90cab4da3 \
     --model-sha256 364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf

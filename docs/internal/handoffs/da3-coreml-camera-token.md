@@ -38,7 +38,8 @@ and traces remain ignored build artifacts.
 
 - Preserve `alt_start = 4` for DA3 Small.
 - Replace the in-place class/camera-token assignment with concatenation.
-- Start at 518 x 518 so DINOv2 positional embeddings require no bicubic resize.
+- Keep 518 x 518 as the native default. Fixed smaller sizes precompute DINOv2's
+  positional interpolation and store the resulting table in the exported graph.
 - Compare to the untouched official model, not merely the rewritten eager graph.
 - A camera image or camera calibration is not an input; the single-view model
   inserts its learned fixed camera token.
@@ -65,18 +66,25 @@ and traces remain ignored build artifacts.
   payload is byte-identical to the v0.1 release and package integrated into
   MESS. Runtime timing varies between standalone runs and should be measured in
   the MESS session for scheduling decisions.
+- Command: `COREML_INPUT_SIZE=392 tools/coreml/build_da3_small.sh`
+- Latest 392 result: Passed. The frozen positional-table and camera-token rewrite
+  are exact against untouched PyTorch; trace max error is `3.58e-7`; the float16
+  Core ML package reached cosine `0.9999964`, mean absolute difference `0.002042`,
+  and maximum difference `0.011900`. Core ML `CPU_AND_GPU` prediction had a
+  `16.69 ms` warm median. MPSGraph conversion and an independent execution probe
+  also passed with a `15.22 ms` graph-only warm median.
 
 ## Remaining Issues
 
-The package is published in the experimental `da3-small-coreml-v0.1.0` GitHub
-release with a separate SHA-256 asset. The fork's default `main` branch links to
-this clean integration branch. Realtime MESS performance still needs to be
-compared against V2 under the same session workload.
+The native package is published in the experimental `da3-small-coreml-v0.1.0`
+GitHub release with a separate SHA-256 asset. The 392 package still needs a
+release asset and MESS integration. Realtime performance and visual quality must
+be compared at both sizes under the same session workload.
 
 ## Next Exact Action
 
-Measure the released DA3 package against V2 in the MESS realtime session with
-the existing two-job scheduler and latest-pending-frame policy.
+Integrate the validated 392 package into MESS as separate Core ML and MPSGraph
+options while preserving the existing 518 choices.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;
