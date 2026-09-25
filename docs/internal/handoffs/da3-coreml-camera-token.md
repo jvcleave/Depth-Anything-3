@@ -64,13 +64,14 @@ and traces remain ignored build artifacts.
 
 ## Remaining Issues
 
-The generated package remains a local artifact. Other developers must build it
-locally until a release asset is published.
+The package is published in the experimental `da3-small-coreml-v0.1.0` GitHub
+release with a separate SHA-256 asset. Realtime MESS performance still needs to
+be compared against V2 under the same session workload.
 
 ## Next Exact Action
 
-Optionally publish the validated `.mlpackage` as a GitHub Release asset so MESS
-developers can download the exact package without running the conversion.
+Measure the released DA3 package against V2 in the MESS realtime session with
+the existing two-job scheduler and latest-pending-frame policy.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;

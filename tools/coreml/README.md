@@ -27,6 +27,20 @@ The exporter makes three fixed-shape rewrites:
 The 518 x 518 input uses DINOv2's native 37 x 37 patch grid, so positional
 embedding interpolation is unnecessary.
 
+## Prebuilt package
+
+The validated package is available from the experimental
+[`da3-small-coreml-v0.1.0` release](https://github.com/jvcleave/Depth-Anything-3/releases/tag/da3-small-coreml-v0.1.0).
+Download both release assets, then verify and unpack them:
+
+```bash
+shasum -a 256 -c DepthAnything3SmallCameraTokenImageF16.mlpackage.zip.sha256
+unzip DepthAnything3SmallCameraTokenImageF16.mlpackage.zip
+```
+
+The archive SHA-256 is
+`ffb8150dc55f004bd0bd01f4d1788212c79f46d1af029a88e42e438efa243487`.
+
 ## One-command build and validation
 
 Requirements:
