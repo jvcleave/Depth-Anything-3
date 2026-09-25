@@ -69,15 +69,14 @@ and traces remain ignored build artifacts.
 ## Remaining Issues
 
 The package is published in the experimental `da3-small-coreml-v0.1.0` GitHub
-release with a separate SHA-256 asset. The fork's default branch still needs a
-small README pointer to this clean integration branch. Realtime MESS performance
-still needs to be compared against V2 under the same session workload.
+release with a separate SHA-256 asset. The fork's default `main` branch links to
+this clean integration branch. Realtime MESS performance still needs to be
+compared against V2 under the same session workload.
 
 ## Next Exact Action
 
-Push `codex/coreml-upstream`, then add a README pointer on the fork's default
-`main` branch without merging its older MPS-specific source changes into the
-clean upstream-based branch.
+Measure the released DA3 package against V2 in the MESS realtime session with
+the existing two-job scheduler and latest-pending-frame policy.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;
