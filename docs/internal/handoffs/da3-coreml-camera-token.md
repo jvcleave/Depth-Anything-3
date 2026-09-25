@@ -2,35 +2,36 @@
 
 - Updated: 2026-09-25
 - Owning repository: `/Users/jvcleave/Documents/WORK_IN_PROGRESS/MACHINE_LEARNING/Depth-Anything-3`
-- Branch and HEAD: `mps-benchmarks-etc` at `3a1bb9d`
+- Branch: `mps-benchmarks-etc`; recover the current revision with `git log`
 
 ## Objective
 
-Produce a Core ML `.mlpackage` for DA3 Small that preserves the learned camera
-token and alternating attention used by the official single-view model.
+Maintain a reproducible Core ML `.mlpackage` build for DA3 Small that preserves
+the learned camera token and alternating attention used by the official
+single-view model.
 
 ## Definition of Done
 
-The functional export graph matches the untouched PyTorch model on fixed inputs,
-converts to Core ML, and the Core ML output is checked against the same oracle.
+A clean Python 3.11 environment can run one command to export the model, compare
+it with untouched PyTorch, and validate the resulting Core ML package.
 
 ## Current Bounded Milestone
 
-Completed: create and validate a TorchScript/Core ML-compatible functional
-replacement for the camera-token mutation without setting `alt_start = -1`.
+Completed: add and validate the isolated `tools/coreml/build_da3_small.sh`
+workflow without setting `alt_start = -1`.
 
 ## Non-Goals
 
-App integration and replacing the production Depth Anything V2 backend.
+Replacing the production Depth Anything V2 default or committing generated
+model artifacts to Git.
 
 ## Repository State
 
 The repository already contained an untracked conversion script, virtual
 environment, four generated `.mlpackage` directories, a traced model, and
-`TODO_COREML_CONVERSION.md`. Preserve those artifacts. New work uses a separate
-camera-token exporter. `convert_to_coreml_camera_token.py` and
-`COREML_CAMERA_TOKEN_EXPORT.md` are the new source artifacts. Generated camera
-token model packages and traces remain untracked build artifacts.
+`TODO_COREML_CONVERSION.md`. Preserve those artifacts. The supported camera-token
+conversion workflow now lives under `tools/coreml/`. Generated model packages
+and traces remain ignored build artifacts.
 
 ## Decisions and Constraints to Preserve
 
@@ -44,28 +45,32 @@ token model packages and traces remain untracked build artifacts.
 ## Relevant Files
 
 - `convert_to_coreml.py` — previous exporter that disabled `alt_start`.
-- `convert_to_coreml_camera_token.py` — new fidelity-preserving exporter.
-- `COREML_CAMERA_TOKEN_EXPORT.md` — reproduction command, rationale, and results.
+- `tools/coreml/export_camera_token.py` — fidelity-preserving exporter.
+- `tools/coreml/build_da3_small.sh` — isolated one-command build and validation.
+- `tools/coreml/validate_export.py` — Core ML comparison and timing.
+- `tools/coreml/README.md` — reproduction command, rationale, and results.
 - `src/depth_anything_3/model/dinov2/vision_transformer.py` — official camera-token and alternating-attention behavior.
 
 ## Verification
 
-- Command: `.venv/bin/python convert_to_coreml_camera_token.py --input-size 518 --use-image-input --grayscale-output --compute-precision float16 ...`
-- Latest result: Passed. The functional rewrite is exact against untouched
-  PyTorch; trace max error is `2.38e-7`; the float16 image package reached cosine
-  `0.9999935` on `assets/examples/SOH/000.png`, measured `23.94 ms` median on
-  `CPU_AND_GPU`, and occupies approximately 67 MB.
+- Command: `tools/coreml/build_da3_small.sh`
+- Latest clean-environment result: Passed. The functional rewrite is exact
+  against untouched PyTorch; trace max error is `2.38e-7`; the float16 image
+  package reached cosine `1.0`, mean absolute difference `0.000542`, and maximum
+  absolute difference `0.008437` on `assets/examples/SOH/000.png`. Its weight
+  payload is byte-identical to the package integrated into MESS. Runtime timing
+  varies between standalone runs and should be measured in the MESS session for
+  scheduling decisions.
 
 ## Remaining Issues
 
-The generated package is not yet integrated into MESS. Its raw relative-depth
-range will need an explicit model scale in the MESS catalog.
+The generated package remains a local artifact. Other developers must build it
+locally until a release asset is published.
 
 ## Next Exact Action
 
-Copy or otherwise provision the float16 image package for MESS, add an explicit
-518 x 518 model variant and output scale, then test it through the realtime depth
-session without changing the V2 production default.
+Optionally publish the validated `.mlpackage` as a GitHub Release asset so MESS
+developers can download the exact package without running the conversion.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;

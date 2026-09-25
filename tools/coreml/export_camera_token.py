@@ -9,7 +9,7 @@ from typing import Any
 
 import torch
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
@@ -27,7 +27,7 @@ from depth_anything_3.registry import MODEL_REGISTRY
 
 DEFAULT_MODEL_NAME = "da3-small"
 DEFAULT_MODEL_SOURCE = "depth-anything/DA3-SMALL"
-DEFAULT_OUTPUT = "DepthAnything3SmallCameraToken.mlpackage"
+DEFAULT_OUTPUT = "build/coreml/DepthAnything3SmallCameraToken.mlpackage"
 SAFETENSORS_NAME = "model.safetensors"
 
 class TraceablePositionGetter:
@@ -227,7 +227,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--trace-output",
-        default="DepthAnything3SmallCameraToken_traced.pt",
+        default="build/coreml/DepthAnything3SmallCameraToken_traced.pt",
         help="Optional TorchScript output path.",
     )
     parser.add_argument(
