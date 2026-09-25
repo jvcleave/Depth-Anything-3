@@ -2,7 +2,8 @@
 
 - Updated: 2026-09-25
 - Owning repository: `/Users/jvcleave/Documents/WORK_IN_PROGRESS/MACHINE_LEARNING/Depth-Anything-3`
-- Branch: `mps-benchmarks-etc`; recover the current revision with `git log`
+- Integration worktree: `/Users/jvcleave/Documents/WORK_IN_PROGRESS/MACHINE_LEARNING/Depth-Anything-3-coreml-upstream`
+- Branch: `codex/coreml-upstream`; recover the current revision with `git log`
 
 ## Objective
 
@@ -17,8 +18,8 @@ it with untouched PyTorch, and validate the resulting Core ML package.
 
 ## Current Bounded Milestone
 
-Completed: add and validate the isolated `tools/coreml/build_da3_small.sh`
-workflow without setting `alt_start = -1`.
+Completed: port the validated exporter to ByteDance Seed `main` at `3d835ec`,
+pin the Hugging Face model revision and checksum, then rebuild and validate it.
 
 ## Non-Goals
 
@@ -41,6 +42,9 @@ and traces remain ignored build artifacts.
 - Compare to the untouched official model, not merely the rewritten eager graph.
 - A camera image or camera calibration is not an input; the single-view model
   inserts its learned fixed camera token.
+- Pin DA3-SMALL to Hugging Face revision
+  `e08cab65ca0ec38e7826075418411ab90cab4da3` and verify weights SHA-256
+  `364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf`.
 
 ## Relevant Files
 
@@ -54,24 +58,26 @@ and traces remain ignored build artifacts.
 ## Verification
 
 - Command: `tools/coreml/build_da3_small.sh`
-- Latest clean-environment result: Passed. The functional rewrite is exact
+- Latest current-upstream result: Passed. The functional rewrite is exact
   against untouched PyTorch; trace max error is `2.38e-7`; the float16 image
   package reached cosine `1.0`, mean absolute difference `0.000542`, and maximum
   absolute difference `0.008437` on `assets/examples/SOH/000.png`. Its weight
-  payload is byte-identical to the package integrated into MESS. Runtime timing
-  varies between standalone runs and should be measured in the MESS session for
-  scheduling decisions.
+  payload is byte-identical to the v0.1 release and package integrated into
+  MESS. Runtime timing varies between standalone runs and should be measured in
+  the MESS session for scheduling decisions.
 
 ## Remaining Issues
 
 The package is published in the experimental `da3-small-coreml-v0.1.0` GitHub
-release with a separate SHA-256 asset. Realtime MESS performance still needs to
-be compared against V2 under the same session workload.
+release with a separate SHA-256 asset. The fork's default branch still needs a
+small README pointer to this clean integration branch. Realtime MESS performance
+still needs to be compared against V2 under the same session workload.
 
 ## Next Exact Action
 
-Measure the released DA3 package against V2 in the MESS realtime session with
-the existing two-job scheduler and latest-pending-frame policy.
+Push `codex/coreml-upstream`, then add a README pointer on the fork's default
+`main` branch without merging its older MPS-specific source changes into the
+clean upstream-based branch.
 
 **Fresh-task startup:** Read `docs/internal/handoffs/da3-coreml-camera-token.md`, recover
 current state from the repository, and continue with its **Next Exact Action**;

@@ -14,7 +14,13 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 
-from export_camera_token import DA3ImageInputWrapper, load_api_model
+from export_camera_token import (
+    DA3ImageInputWrapper,
+    DEFAULT_MODEL_REVISION,
+    DEFAULT_MODEL_SHA256,
+    DEFAULT_MODEL_SOURCE,
+    load_api_model,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,7 +29,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model", required=True, help="Core ML package or compiled model.")
     parser.add_argument("--image", required=True, help="Reference image path.")
-    parser.add_argument("--model-source", default="depth-anything/DA3-SMALL")
+    parser.add_argument("--model-source", default=DEFAULT_MODEL_SOURCE)
+    parser.add_argument("--model-revision", default=DEFAULT_MODEL_REVISION)
+    parser.add_argument("--model-sha256", default=DEFAULT_MODEL_SHA256)
     parser.add_argument("--input-size", type=int, default=518)
     parser.add_argument(
         "--compute-unit",
@@ -65,7 +73,12 @@ def main() -> int:
     image_array = np.asarray(image, dtype=np.float32).copy() / 255.0
     input_tensor = torch.from_numpy(image_array).permute(2, 0, 1).unsqueeze(0)
 
-    official_model = load_api_model("da3-small", args.model_source)
+    official_model = load_api_model(
+        "da3-small",
+        args.model_source,
+        args.model_revision,
+        args.model_sha256,
+    )
     official_wrapper = DA3ImageInputWrapper(official_model).eval()
     with torch.inference_mode():
         reference = official_wrapper(input_tensor).detach().cpu().float().squeeze()
@@ -107,6 +120,9 @@ def main() -> int:
     result = {
         "model": str(model_path),
         "image": str(image_path),
+        "model_source": args.model_source,
+        "model_revision": args.model_revision,
+        "model_sha256": args.model_sha256,
         "compute_unit": args.compute_unit,
         "pytorch": tensor_summary(reference),
         "coreml": tensor_summary(candidate),

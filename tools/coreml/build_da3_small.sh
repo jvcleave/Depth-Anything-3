@@ -37,6 +37,8 @@ KMP_DUPLICATE_LIB_OK=TRUE "$VENV_DIR/bin/python" \
     "$SCRIPT_DIR/export_camera_token.py" \
     --model-name da3-small \
     --model-source depth-anything/DA3-SMALL \
+    --model-revision e08cab65ca0ec38e7826075418411ab90cab4da3 \
+    --model-sha256 364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf \
     --input-size 518 \
     --use-image-input \
     --grayscale-output \
@@ -47,7 +49,10 @@ KMP_DUPLICATE_LIB_OK=TRUE "$VENV_DIR/bin/python" \
 KMP_DUPLICATE_LIB_OK=TRUE "$VENV_DIR/bin/python" \
     "$SCRIPT_DIR/validate_export.py" \
     --model "$MODEL_PATH" \
-    --image "$REPO_ROOT/assets/examples/SOH/000.png"
+    --image "$REPO_ROOT/assets/examples/SOH/000.png" \
+    --model-source depth-anything/DA3-SMALL \
+    --model-revision e08cab65ca0ec38e7826075418411ab90cab4da3 \
+    --model-sha256 364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf
 
 echo "Core ML package: $MODEL_PATH"
 echo "TorchScript trace: $TRACE_PATH"

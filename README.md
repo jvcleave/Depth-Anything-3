@@ -46,6 +46,15 @@ All models are trained exclusively on **public academic datasets**.
 - **25-11-2025:** Add [Awesome DA3 Projects](#-awesome-da3-projects), a community-driven section featuring DA3-based applications.
 - **14-11-2025:** Paper, project page, code and models are all released.
 
+### Unofficial Core ML export
+
+The MESS fork maintains a fixed-shape, single-view DA3 Small Core ML conversion
+that preserves the learned camera token and alternating attention path. See
+[`tools/coreml/README.md`](tools/coreml/README.md) for the reproducible 518 x 518
+build, validation results, limitations, and the prebuilt experimental release.
+This conversion is maintained by the MESS project and is not an official
+ByteDance Seed artifact.
+
 ## ✨ Highlights
 
 ### 🏆 Model Zoo

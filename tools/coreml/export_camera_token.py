@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import functools
 import gc
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -27,6 +29,8 @@ from depth_anything_3.registry import MODEL_REGISTRY
 
 DEFAULT_MODEL_NAME = "da3-small"
 DEFAULT_MODEL_SOURCE = "depth-anything/DA3-SMALL"
+DEFAULT_MODEL_REVISION = "e08cab65ca0ec38e7826075418411ab90cab4da3"
+DEFAULT_MODEL_SHA256 = "364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf"
 DEFAULT_OUTPUT = "build/coreml/DepthAnything3SmallCameraToken.mlpackage"
 SAFETENSORS_NAME = "model.safetensors"
 
@@ -207,7 +211,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model-source",
         default=DEFAULT_MODEL_SOURCE,
-        help="HF repo id or local directory passed to DepthAnything3.from_pretrained().",
+        help="Hugging Face repository or local model path.",
+    )
+    parser.add_argument(
+        "--model-revision",
+        default=DEFAULT_MODEL_REVISION,
+        help="Pinned Hugging Face commit used when model-source is a repository.",
+    )
+    parser.add_argument(
+        "--model-sha256",
+        default=DEFAULT_MODEL_SHA256,
+        help="Expected model.safetensors SHA-256; pass an empty value to skip the check.",
     )
     parser.add_argument(
         "--output",
@@ -249,7 +263,20 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def resolve_weights_path(model_source: str | None) -> str | None:
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as source:
+        for chunk in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+@functools.lru_cache(maxsize=None)
+def resolve_weights_path(
+    model_source: str | None,
+    model_revision: str | None,
+    expected_sha256: str | None,
+) -> str | None:
     if not model_source:
         return None
     source_path = Path(model_source)
@@ -258,14 +285,36 @@ def resolve_weights_path(model_source: str | None) -> str | None:
             candidate = source_path / SAFETENSORS_NAME
             if not candidate.exists():
                 raise FileNotFoundError(f"Expected {candidate} to exist.")
-            return str(candidate)
-        return str(source_path)
-    return hf_hub_download(repo_id=model_source, filename=SAFETENSORS_NAME)
+            weights_path = candidate
+        else:
+            weights_path = source_path
+    else:
+        weights_path = Path(
+            hf_hub_download(
+                repo_id=model_source,
+                filename=SAFETENSORS_NAME,
+                revision=model_revision,
+            )
+        )
+
+    if expected_sha256:
+        digest = sha256_file(weights_path)
+        if digest != expected_sha256:
+            raise RuntimeError(
+                f"Unexpected weights SHA-256 for {weights_path}: "
+                f"expected {expected_sha256}, got {digest}"
+            )
+    return str(weights_path)
 
 
-def load_api_model(model_name: str, model_source: str | None) -> LocalDepthAnything3:
+def load_api_model(
+    model_name: str,
+    model_source: str | None,
+    model_revision: str | None,
+    model_sha256: str | None,
+) -> LocalDepthAnything3:
     model = LocalDepthAnything3(model_name=model_name)
-    weights_path = resolve_weights_path(model_source)
+    weights_path = resolve_weights_path(model_source, model_revision, model_sha256)
     if weights_path is not None:
         state_dict = load_file(weights_path, device="cpu")
         missing, unexpected = model.load_state_dict(state_dict, strict=False)
@@ -395,7 +444,12 @@ def main() -> int:
     camera_functional_output = None
     if needs_monkey_patches(args.model_name):
         print(f"Running untouched {args.model_name} PyTorch oracle...")
-        official_model = load_api_model(args.model_name, args.model_source)
+        official_model = load_api_model(
+            args.model_name,
+            args.model_source,
+            args.model_revision,
+            args.model_sha256,
+        )
         if args.use_image_input:
             official_wrapper = DA3ImageInputWrapper(official_model)
         else:
@@ -409,7 +463,12 @@ def main() -> int:
 
         print("Checking functional camera-token replacement in isolation...")
         patch_camera_token_assignment()
-        camera_functional_model = load_api_model(args.model_name, args.model_source)
+        camera_functional_model = load_api_model(
+            args.model_name,
+            args.model_source,
+            args.model_revision,
+            args.model_sha256,
+        )
         if args.use_image_input:
             camera_functional_wrapper = DA3ImageInputWrapper(camera_functional_model)
         else:
@@ -425,7 +484,12 @@ def main() -> int:
         print("Applying the exact Core ML-compatible UV-grid replacement...")
         patch_uv_grid()
 
-    api_model = load_api_model(args.model_name, args.model_source)
+    api_model = load_api_model(
+        args.model_name,
+        args.model_source,
+        args.model_revision,
+        args.model_sha256,
+    )
 
     if needs_monkey_patches(args.model_name):
         apply_rope_model_fixups(api_model)
@@ -450,6 +514,8 @@ def main() -> int:
     summary = {
         "model_name": args.model_name,
         "model_source": args.model_source,
+        "model_revision": args.model_revision,
+        "model_sha256": args.model_sha256,
         "input_size": args.input_size,
         "use_image_input": args.use_image_input,
         "compute_precision": args.compute_precision,

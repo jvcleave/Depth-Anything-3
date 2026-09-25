@@ -13,6 +13,10 @@ single-view path. At `S = 1`, the model uses its learned reference camera token;
 it does not need camera calibration or a live camera input. Global cross-view
 attention naturally reduces to self-attention for the one input view.
 
+This is an unofficial conversion maintained by the MESS project. It is based
+on ByteDance Seed `main` commit `3d835ec` and keeps its source code and DA3
+Small model under their Apache 2.0 licenses.
+
 ## Core ML-compatible rewrites
 
 The exporter makes three fixed-shape rewrites:
@@ -58,9 +62,11 @@ tools/coreml/build_da3_small.sh
 ```
 
 The script creates an isolated `.venv-coreml`, installs the versions in
-`requirements-coreml.txt`, downloads `depth-anything/DA3-SMALL` through the
-Hugging Face cache, exports the model, and validates the Core ML result against
-the untouched PyTorch model using `assets/examples/SOH/000.png`.
+`requirements-coreml.txt`, downloads `depth-anything/DA3-SMALL` at Hugging Face
+revision `e08cab65ca0ec38e7826075418411ab90cab4da3`, verifies the weights SHA-256
+`364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf`, exports
+the model, and validates the Core ML result against the untouched PyTorch model
+using `assets/examples/SOH/000.png`.
 
 Core ML Tools 9.0 prints a warning because its published compatibility table
 stops at PyTorch 2.7. The pinned PyTorch 2.11 toolchain is intentional: it is the
@@ -85,6 +91,8 @@ KMP_DUPLICATE_LIB_OK=TRUE .venv-coreml/bin/python \
   tools/coreml/export_camera_token.py \
   --model-name da3-small \
   --model-source depth-anything/DA3-SMALL \
+  --model-revision e08cab65ca0ec38e7826075418411ab90cab4da3 \
+  --model-sha256 364492e38a3a06d221ac75da7f6621ada3f2361cd24fde11ba79091e9f40efcf \
   --input-size 518 \
   --use-image-input \
   --grayscale-output \
@@ -139,3 +147,7 @@ This export is fixed to one view and emits depth only. DA3 Small's confidence
 head is still present in the source model but is outside the current MESS depth
 contract. MESS must resize its source image to 518 x 518 and scale the returned
 relative-depth image back to the source texture size.
+
+The exporter is maintained on top of ByteDance Seed's `main`. The
+upstream multi-view reference-selection, batched inference, and streaming
+changes do not enter this fixed `B = 1`, `S = 1` graph.
