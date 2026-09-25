@@ -42,6 +42,16 @@ All models are trained exclusively on **public academic datasets**.
 ## 📰 News
 - **2025-11-14:** 🎉 Paper, project page, code and models are all released.
 
+## MESS Core ML export
+
+The MESS project maintains an unofficial, fixed-shape DA3 Small Core ML export
+on the [`codex/coreml-upstream`](https://github.com/jvcleave/Depth-Anything-3/tree/codex/coreml-upstream/tools/coreml)
+branch. It is based on current ByteDance Seed `main`, preserves the learned
+camera-token path, pins and verifies the source weights, and includes a
+reproducible build and validation workflow. A validated package is available in
+the [`da3-small-coreml-v0.1.0`](https://github.com/jvcleave/Depth-Anything-3/releases/tag/da3-small-coreml-v0.1.0)
+release.
+
 ## ✨ Highlights
 
 ### 🏆 Model Zoo
