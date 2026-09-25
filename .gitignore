@@ -1,6 +1,10 @@
 # Python cache
 __pycache__/
 *.py[cod]
+/.venv/
+/.venv-coreml/
+*.mlpackage/
+*_traced.pt
 
 
 # Distribution / packaging
